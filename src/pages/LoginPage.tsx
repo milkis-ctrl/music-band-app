@@ -17,15 +17,22 @@ export const LoginPage: React.FC = () => {
 
     try {
       const res = await api.post('/api/auth/login', { username, password });
-      const token = res.data.token || res.data.accessToken || res.data;
-      
-      if (typeof token === 'string') {
-        localStorage.setItem('token', token);
-      } else if (token.token) {
-        localStorage.setItem('token', token.token);
+      const data = res.data;
+
+      const accessToken =
+        data.accessToken || data.access || data.tokens?.accessToken || (typeof data === 'string' ? data : data.token);
+      const refreshToken =
+        data.refreshToken || data.refresh || data.tokens?.refreshToken;
+
+      if (accessToken) {
+        localStorage.setItem('accessToken', accessToken);
+        if (refreshToken) {
+          localStorage.setItem('refreshToken', refreshToken);
+        }
+        navigate('/profile');
+      } else {
+        setError('Сервер не вернул токен авторизации');
       }
-      
-      navigate('/profile');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Ошибка входа. Проверьте логин и пароль.');
     } finally {
@@ -35,7 +42,7 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div style={containerStyle}>
-      {loading && <Loader text="Выполняем вход в систему..." />}
+      {loading && <Loader text="Авторизация (JWT)..." />}
       <form onSubmit={handleLogin} style={cardStyle}>
         <h2 style={{ marginBottom: 20 }}>Вход в фан-клуб</h2>
         {error && <div style={errorStyle}>{error}</div>}
